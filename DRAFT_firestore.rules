@@ -1,0 +1,77 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+    
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidReceipt(data) {
+      return data.keys().hasAll(['userId', 'receiptNumber', 'date', 'createdAt']) &&
+        data.userId == request.auth.uid &&
+        data.receiptNumber is number &&
+        data.date is string &&
+        data.date.size() <= 50 &&
+        ( !('amountDinar' in data) || (data.amountDinar is string && data.amountDinar.size() <= 100) ) &&
+        ( !('amountDollar' in data) || (data.amountDollar is string && data.amountDollar.size() <= 100) ) &&
+        ( !('building' in data) || (data.building is string && data.building.size() <= 200) ) &&
+        ( !('apartmentNumber' in data) || (data.apartmentNumber is string && data.apartmentNumber.size() <= 100) ) &&
+        ( !('receivedFrom' in data) || (data.receivedFrom is string && data.receivedFrom.size() <= 300) ) &&
+        ( !('amountText' in data) || (data.amountText is string && data.amountText.size() <= 200) ) &&
+        ( !('forMonth' in data) || (data.forMonth is string && data.forMonth.size() <= 100) );
+    }
+
+    function isValidCounter(data) {
+      return data.keys().hasAll(['userId', 'lastReceiptNumber', 'updatedAt']) &&
+        data.userId == request.auth.uid &&
+        data.lastReceiptNumber is number &&
+        data.lastReceiptNumber >= 0;
+    }
+
+    match /users/{userId}/receipts/{receiptId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+        isValidId(receiptId) &&
+        isValidReceipt(incoming()) &&
+        incoming().createdAt == request.time;
+      allow update: if isOwner(userId) &&
+        isValidId(receiptId) &&
+        isValidReceipt(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['receiptNumber', 'amountDinar', 'amountDollar', 'date', 'building', 'apartmentNumber', 'receivedFrom', 'amountText', 'forMonth']);
+      allow delete: if isOwner(userId) && isValidId(receiptId);
+    }
+
+    match /users/{userId}/counters/receiptCounter {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+        isValidCounter(incoming()) &&
+        incoming().updatedAt == request.time;
+      allow update: if isOwner(userId) &&
+        isValidCounter(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['lastReceiptNumber', 'updatedAt']);
+    }
+  }
+}

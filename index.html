@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ckb" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="icon" type="image/jpeg" href="/frialogo.jpg" />
+    <link rel="apple-touch-icon" href="/frialogo.jpg" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#dc2626" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="کۆمپانیای فریا" />
+    <meta name="application-name" content="کۆمپانیای فریا" />
+    <title>کۆمپانیای فریا</title>
+    <meta name="description" content="سیستەمی چاپکردن و بەڕێوەبردنی وەسڵی کۆمپانیای فریا" />
+    <meta property="og:title" content="کۆمپانیای فریا" />
+    <meta property="og:description" content="سیستەمی چاپکردن و بەڕێوەبردنی وەسڵی کۆمپانیای فریا" />
+    <meta property="og:image" content="/frialogo.jpg" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="کۆمپانیای فریا" />
+    <meta name="twitter:image" content="/frialogo.jpg" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.log('Service Worker registration failed:', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
+
