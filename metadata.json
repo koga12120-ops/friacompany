@@ -1,0 +1,6 @@
+{
+  "name": "سیستەمی وەسڵی فریا",
+  "description": "سیستەمی چاپکردن و بەڕێوەبردنی وەسڵی کۆمپانیای فریا",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+    
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidReceipt(data) {
+      return data.keys().hasAll(['userId', 'receiptNumber', 'date', 'createdAt']) &&
+        data.userId == request.auth.uid &&
+        data.receiptNumber is number &&
+        data.date is string &&
+        data.date.size() <= 50 &&
+        ( !('type' in data) || (data.type in ['services', 'electricity', 'document']) ) &&
+        ( !('amountDinar' in data) || (data.amountDinar is string && data.amountDinar.size() <= 100) ) &&
+        ( !('amountDollar' in data) || (data.amountDollar is string && data.amountDollar.size() <= 100) ) &&
+        ( !('building' in data) || (data.building is string && data.building.size() <= 200) ) &&
+        ( !('apartmentNumber' in data) || (data.apartmentNumber is string && data.apartmentNumber.size() <= 100) ) &&
+        ( !('receivedFrom' in data) || (data.receivedFrom is string && data.receivedFrom.size() <= 300) ) &&
+        ( !('amountText' in data) || (data.amountText is string && data.amountText.size() <= 200) ) &&
+        ( !('forMonth' in data) || (data.forMonth is string && data.forMonth.size() <= 100) ) &&
+        ( !('documentTo' in data) || (data.documentTo is string && data.documentTo.size() <= 300) ) &&
+        ( !('subject' in data) || (data.subject is string && data.subject.size() <= 300) ) &&
+        ( !('content' in data) || (data.content is string && data.content.size() <= 10000) ) &&
+        ( !('contentFontSize' in data) || (data.contentFontSize is string && data.contentFontSize.size() <= 20) ) &&
+        ( !('contentIsBold' in data) || (data.contentIsBold is bool) ) &&
+        ( !('contentAlign' in data) || (data.contentAlign is string && data.contentAlign.size() <= 20) ) &&
+        ( !('subjectFontSize' in data) || (data.subjectFontSize is string && data.subjectFontSize.size() <= 20) ) &&
+        ( !('subjectIsBold' in data) || (data.subjectIsBold is bool) );
+    }
+
+    function isValidCustomer(data) {
+      return data.keys().hasAll(['userId', 'name', 'createdAt']) &&
+        data.userId == request.auth.uid &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+        ( !('building' in data) || (data.building is string && data.building.size() <= 200) ) &&
+        ( !('apartmentNumber' in data) || (data.apartmentNumber is string && data.apartmentNumber.size() <= 100) ) &&
+        ( !('phone' in data) || (data.phone is string && data.phone.size() <= 50) ) &&
+        ( !('notes' in data) || (data.notes is string && data.notes.size() <= 500) );
+    }
+
+    function isValidCounter(data) {
+      return data.keys().hasAll(['userId', 'lastReceiptNumber', 'updatedAt']) &&
+        data.userId == request.auth.uid &&
+        data.lastReceiptNumber is number &&
+        data.lastReceiptNumber >= 0;
+    }
+
+    match /users/{userId}/receipts/{receiptId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+        isValidId(receiptId) &&
+        isValidReceipt(incoming()) &&
+        incoming().createdAt == request.time;
+      allow update: if isOwner(userId) &&
+        isValidId(receiptId) &&
+        isValidReceipt(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'receiptNumber', 'type', 'amountDinar', 'amountDollar', 'date',
+          'building', 'apartmentNumber', 'receivedFrom', 'amountText', 'forMonth',
+          'documentTo', 'subject', 'content', 'contentFontSize', 'contentIsBold',
+          'contentAlign', 'subjectFontSize', 'subjectIsBold'
+        ]);
+      allow delete: if isOwner(userId) && isValidId(receiptId);
+    }
+
+    match /users/{userId}/customers/{customerId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+        isValidId(customerId) &&
+        isValidCustomer(incoming()) &&
+        incoming().createdAt == request.time;
+      allow update: if isOwner(userId) &&
+        isValidId(customerId) &&
+        isValidCustomer(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'building', 'apartmentNumber', 'phone', 'notes']);
+      allow delete: if isOwner(userId) && isValidId(customerId);
+    }
+
+    match /users/{userId}/counters/receiptCounter {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+        isValidCounter(incoming()) &&
+        incoming().updatedAt == request.time;
+      allow update: if isOwner(userId) &&
+        isValidCounter(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['lastReceiptNumber', 'updatedAt']);
+    }
+  }
+}
+
+
