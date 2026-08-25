@@ -1,0 +1,26 @@
+{
+  "name": "کۆمپانیای فریا",
+  "short_name": "کۆمپانیای فریا",
+  "description": "سیستەمی بەڕێوەبردن و چاپکردنی پسوولە و وەسڵی کۆمپانیای فریا",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#dc2626",
+  "dir": "rtl",
+  "lang": "ckb",
+  "icons": [
+    {
+      "src": "/frialogo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/frialogo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
